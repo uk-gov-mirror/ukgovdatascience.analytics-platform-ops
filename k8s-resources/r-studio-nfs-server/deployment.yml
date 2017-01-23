@@ -1,0 +1,71 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: r-studio-nfs-server
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        role: r-studio-nfs-server
+    spec:
+      containers:
+      - name: nfs-server
+        image: fuzzle/docker-nfs-server:latest
+        env:
+          - name: NFS_EXPORT_DIR_1
+            value: /exports
+          - name: NFS_EXPORT_DOMAIN_1
+            value: '*'
+          - name: NFS_EXPORT_OPTIONS_1
+            value: rw
+        ports:
+          - name: nfs
+            containerPort: 2049
+          - name: rpcbind
+            containerPort: 111
+          - name: nfslisten
+            containerPort: 32765
+          - name: nfssend
+            containerPort: 32766
+          - name: mountd
+            containerPort: 32767
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - mountPath: /exports
+            name: nfs-pvc
+          # - name: config-volume
+          #   mountPath: /nfs-config
+        # workaround for mounting configmap items at specific file paths without
+        # replacing the enclosing directory entirely
+        #
+        # mount the NFS exports file to /nfs-config/nfs.exports, then
+        # symlink to /etc/exports
+        # lifecycle:
+        #   postStart:
+        #     exec:
+        #       command:
+        #         - ln
+        #         - -sf
+        #         - /nfs-config/nfs.exports
+        #         - /etc/exports
+      volumes:
+        - name: nfs-pvc
+          persistentVolumeClaim:
+            claimName: r-studio-nfs-server-pvc
+        # - name: config-volume
+        #   configMap:
+        #     name: r-studio-nfs-server
+
+# docker run -d --privileged --restart=always \
+# -v /tmp:/nfs \
+# -e NFS_EXPORT_DIR_1=/nfs \
+# -e NFS_EXPORT_DOMAIN_1=\* \
+# -e NFS_EXPORT_OPTIONS_1=ro,insecure,no_subtree_check,no_root_squash,fsid=1 \
+# -p 111:111 -p 111:111/udp \
+# -p 2049:2049 -p 2049:2049/udp \
+# -p 32765:32765 -p 32765:32765/udp \
+# -p 32766:32766 -p 32766:32766/udp \
+# -p 32767:32767 -p 32767:32767/udp \
+# fuzzle/docker-nfs-server:v1
