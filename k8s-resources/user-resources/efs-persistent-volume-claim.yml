@@ -1,0 +1,30 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs-homes
+  namespace: analytics-user-andy
+spec:
+  accessModes:
+    - ReadWriteMany
+  selector:
+    matchLabels:
+      user: andy
+  resources:
+    requests:
+      storage: 100Gi
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs-home
+  namespace: analytics-user-andy
+spec:
+  accessModes:
+    - ReadWriteMany
+  selector:
+    matchLabels:
+      user: andy
+  resources:
+    requests:
+      storage: 10Gi
