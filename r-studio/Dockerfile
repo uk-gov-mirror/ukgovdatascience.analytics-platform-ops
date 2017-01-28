@@ -46,11 +46,11 @@ RUN apt-get update \
     \n  options(httr_oob_default = TRUE) \
     \n}' >> /usr/local/lib/R/etc/Rprofile.site \
   && echo "PATH=\"${PATH}\"" >> /usr/local/lib/R/etc/Renviron \
-  && useradd rstudio \
-  && echo "rstudio:rstudio" | chpasswd \
-    && mkdir /home/rstudio \
-    && chown rstudio:rstudio /home/rstudio \
-    && addgroup rstudio staff \
+  # && useradd rstudio \
+  # && echo "rstudio:rstudio" | chpasswd \
+  #   && mkdir /home/rstudio \
+  #   && chown rstudio:rstudio /home/rstudio \
+  #   && addgroup rstudio staff \
   && git config --system credential.helper 'cache --timeout=3600' \
   && git config --system push.default simple
   # && wget -P /tmp/ https://github.com/just-containers/s6-overlay/releases/download/v1.11.0.1/s6-overlay-amd64.tar.gz \
@@ -65,9 +65,13 @@ RUN apt-get update \
 
 # RUN echo "auth-proxy=1" >> /etc/rstudio/rserver.conf
 # RUN echo "auth-proxy-sign-in-url=https://r-studio-example.apps.analytics.kops.integration.dsd.io/login" >> /etc/rstudio/rserver.conf
-RUN echo "foo=bar" >> /etc/rstudio/rserver.conf
 
-COPY userconf.sh /etc/cont-init.d/conf
+#COPY userconf.sh /etc/cont-init.d/conf
+
+# RUN echo "server-access-log=1" >> /etc/rstudio/rserver.conf
+
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 EXPOSE 8787
 
-CMD ["/usr/lib/rstudio-server/bin/rserver", "--server-daemonize", "0"]
+CMD ["/usr/local/bin/start.sh"]
