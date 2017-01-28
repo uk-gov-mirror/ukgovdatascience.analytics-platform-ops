@@ -1,10 +1,24 @@
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: r-studio-pvc
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 50Mi
+# # kind: PersistentVolumeClaim
+# # apiVersion: v1
+# # metadata:
+# #   name: r-studio-pvc
+# #   # EBS volumes are bound to a single AZ, so make sure that both
+# #   # the volume and R Studio deployment are constrained to the same AZ
+# #   annotations:
+# #     volume.beta.kubernetes.io/storage-class: "standard-eu-west-1c"
+# # spec:
+# #   accessModes:
+# #     - ReadWriteOnce
+# #   resources:
+# #     requests:
+# #       storage: 100Gi
+# kind: PersistentVolumeClaim
+# apiVersion: v1
+# metadata:
+#   name: r-studio-kerin
+# spec:
+#   accessModes:
+#     - ReadWriteMany
+#   resources:
+#     requests:
+#       storage: 10Gi

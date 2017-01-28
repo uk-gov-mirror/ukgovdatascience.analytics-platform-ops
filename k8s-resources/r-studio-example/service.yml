@@ -5,7 +5,8 @@ metadata:
   labels:
     app: r-studio-example
 spec:
-  sessionAffinity: ClientIP
+  type: LoadBalancer
+  # sessionAffinity: ClientIP
   selector:
     app: r-studio-example
   ports:

@@ -10,11 +10,18 @@ spec:
     metadata:
       labels:
         app: r-studio-example
+        # Force deployment in a specific AZ, to ensure the same EBS volume
+        # is always used
+        #
+        # TODO: check if this is really necessary - can Kubernetes automatically
+        # work out that a deployment and EBS vol must always be provisioned
+        # in the same AZ?
+        failure-domain.beta.kubernetes.io/zone: eu-west-1c
     spec:
       containers:
 
         - name: rstudio-auth-proxy
-          image: kerin/rstudio-auth-proxy:v8
+          image: kerin/rstudio-auth-proxy:v19
           imagePullPolicy: Always
           ports:
             - name: http
@@ -23,27 +30,27 @@ spec:
             - name: AUTH0_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: r-studio-example-auth
+                  name: analyst-tools-auth
                   key: client_secret
             - name: AUTH0_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: r-studio-example-auth
+                  name: analyst-tools-auth
                   key: client_id
             - name: AUTH0_DOMAIN
               valueFrom:
                 secretKeyRef:
-                  name: r-studio-example-auth
+                  name: analyst-tools-auth
                   key: domain
             - name: AUTH0_CALLBACK_URL
               valueFrom:
                 secretKeyRef:
-                  name: r-studio-example-auth
+                  name: analyst-tools-auth
                   key: callback_url
             - name: COOKIE_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: r-studio-example-auth
+                  name: analyst-tools-auth
                   key: cookie_secret
             - name: SHINY_HOST
               value: localhost
@@ -56,27 +63,22 @@ spec:
               cpu: 10m
 
         - name: r-studio-server
-          image: kerin/analytics-r-studio-pro:v7
+          image: kerin/r-studio-pro:v3
           imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8787
+          env:
+            - name: USER
+              value: kerin
           resources:
             requests:
               cpu: 200m
-          env:
-            - name: USERS_PATH
-              value: /etc/rstudio-config/rstudio.users
           volumeMounts:
-            - name: r-studio-nfs
-              mountPath: "/mnt"
-            - name: config-volume
-              mountPath: /etc/rstudio-config/
+            - name: homes
+              mountPath: "/home"
 
       volumes:
-      - name: r-studio-nfs
+      - name: homes
         persistentVolumeClaim:
-          claimName: r-studio-pvc
-      - name: config-volume
-        configMap:
-          name: r-studio-example
+          claimName: nfs-homes
