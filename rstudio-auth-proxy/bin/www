@@ -34,14 +34,29 @@ server.on('listening', onListening);
 
 var proxy = httpProxy.createProxyServer({
   target: {
-      host: process.env.SHINY_HOST,
-      port: process.env.SHINY_PORT
-    }
+    host: process.env.SHINY_HOST,
+    port: process.env.SHINY_PORT
+  },
+  ws: true
 });
 
 server.on('upgrade', function (req, socket, head) {
-  req.url = req.url.substring(8);
+  console.log(req.url);
   proxy.ws(req, socket, head);
+});
+
+proxy.on('error', function (err, req, res){
+  console.log('PROXY ERROR');
+  console.log(err);
+});
+
+proxy.on('proxyRes', function (proxyRes, req, res) {
+  console.log('ProxyRes: RAW Response from the target', proxyRes);
+});
+
+proxy.on('open', function (proxySocket) {
+  // listen for messages coming FROM the target here
+  console.log('ProxyOpen', proxySocket);
 });
 
 

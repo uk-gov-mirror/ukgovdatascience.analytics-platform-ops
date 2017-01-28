@@ -12,9 +12,9 @@ var env = {
 
 var proxy = httpProxy.createProxyServer({
   target: {
-      host: process.env.SHINY_HOST,
-      port: process.env.SHINY_PORT
-    }
+    host: process.env.SHINY_HOST,
+    port: process.env.SHINY_PORT
+  }
 });
 
 proxy.on('error', function(e) {
@@ -32,7 +32,7 @@ var emailToUsername = function(email){
   return email.toLowerCase()
     .replace(/.gov.uk$/g, '')
     .replace(/[^a-z0-9_]/g, '-')
-    .slice(0, 31);
+    .slice(0, 32);
 }
 
 proxy.on('proxyReq', function(proxyReq, req, res, options) {
@@ -44,7 +44,7 @@ proxy.on('proxyReq', function(proxyReq, req, res, options) {
   setIfExists(proxyReq, 'x-auth0-locale', req.user._json.locale);
 
   setIfExists(proxyReq, 'X-RStudio-Username',
-              emailToUsername(req.user._json.email));
+              emailToUsername(req.user._json.nickname));
 });
 
 
