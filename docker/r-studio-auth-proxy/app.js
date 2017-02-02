@@ -5,11 +5,12 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var session = require('express-session');
-var dotenv = require('dotenv')
+//var dotenv = require('dotenv')
 var passport = require('passport');
 var Auth0Strategy = require('passport-auth0');
+var MemcachedStore = require('connect-memcached')(session);
 
-dotenv.load();
+//dotenv.load();
 
 var routes = require('./routes/index');
 //var reports = require('./routes/reports');
@@ -46,11 +47,25 @@ app.set('view engine', 'pug');
 
 app.use(logger('dev'));
 app.use(cookieParser());
-app.use(session({
-  secret: process.env.COOKIE_SECRET,
-  resave: true,
-  saveUninitialized: true
-}));
+
+if(process.env.MEMCACHE_URL){
+  app.use(session({
+    secret: process.env.COOKIE_SECRET,
+    resave: true,
+    saveUninitialized: true,
+    store: new MemcachedStore({
+      hosts: [process.env.MEMCACHE_URL],
+      prefix: 'rsap-' + process.env.USER
+    })
+  }));
+}else{
+  app.use(session({
+    secret: process.env.COOKIE_SECRET,
+    resave: true,
+    saveUninitialized: true
+  }));
+}
+
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.static(path.join(__dirname, 'public')));

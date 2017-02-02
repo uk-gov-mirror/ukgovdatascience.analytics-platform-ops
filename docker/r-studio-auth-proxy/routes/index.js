@@ -40,8 +40,8 @@ proxy.on('proxyReq', function(proxyReq, req, res, options) {
 
     // make sure Github usernames are lowercased - username is used in k8s resource labels,
     // which only allow lowercase
-    if(req.user.__json && req.user.__json.nickname){
-      proxyReq.setHeader('X-RStudio-Username', req.user.__json.nickname.toLowerCase())
+    if(req.user._json.nickname){
+      proxyReq.setHeader('X-RStudio-Username', req.user._json.nickname.toLowerCase());
     }
   }
 });
