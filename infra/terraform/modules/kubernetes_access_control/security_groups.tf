@@ -1,5 +1,5 @@
 resource "aws_security_group" "k8s_inbound_ssh" {
-    name = "inbound_ssh"
+    name = "${var.env}_inbound_ssh"
     vpc_id = "${var.vpc_id}"
 
     ingress {
@@ -13,7 +13,7 @@ resource "aws_security_group" "k8s_inbound_ssh" {
 }
 
 resource "aws_security_group" "k8s_inbound_http" {
-    name = "inbound_http"
+    name = "${var.env}_inbound_http"
     vpc_id = "${var.vpc_id}"
 
     ingress {
