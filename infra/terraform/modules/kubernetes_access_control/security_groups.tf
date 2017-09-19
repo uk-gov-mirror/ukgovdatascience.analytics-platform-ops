@@ -30,3 +30,45 @@ resource "aws_security_group" "k8s_inbound_http" {
       cidr_blocks = ["${var.inbound_http_cidr_blocks}"]
     }
 }
+
+
+resource "aws_security_group" "k8s_nodes_extra" {
+    name = "${var.env}_nodes_extra"
+    vpc_id = "${var.vpc_id}"
+
+    tags {
+      Name = "${var.env}_nodes_extra"
+    }
+}
+
+resource "aws_security_group_rule" "app_ingress_inbound_http" {
+  type            = "ingress"
+
+  from_port       = "${var.inbound_app_ingress_http_port}"
+  to_port         = "${var.inbound_app_ingress_http_port}"
+  protocol        = "tcp"
+  source_security_group_id = "${var.app_ingress_source_sg_id}"
+
+  security_group_id = "${aws_security_group.k8s_nodes_extra.id}"
+}
+
+resource "aws_security_group_rule" "app_ingress_inbound_https" {
+  type            = "ingress"
+
+  from_port       = "${var.inbound_app_ingress_https_port}"
+  to_port         = "${var.inbound_app_ingress_https_port}"
+  protocol        = "tcp"
+  source_security_group_id = "${var.app_ingress_source_sg_id}"
+
+  security_group_id = "${aws_security_group.k8s_nodes_extra.id}"
+}
+
+
+resource "aws_security_group" "k8s_masters_extra" {
+    name = "${var.env}_masters_extra"
+    vpc_id = "${var.vpc_id}"
+
+    tags {
+      Name = "${var.env}_masters_extra"
+    }
+}

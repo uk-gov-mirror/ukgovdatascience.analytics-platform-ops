@@ -13,3 +13,11 @@ output "masters_instance_profile_id" {
 output "nodes_instance_profile_id" {
   value = "${aws_iam_instance_profile.kubernetes_nodes.id}"
 }
+
+output "nodes_extra_sg_id" {
+  value = "${aws_security_group.k8s_nodes_extra.id}"
+}
+
+output "masters_extra_sg_id" {
+  value = "${aws_security_group.k8s_nodes_extra.id}"
+}
