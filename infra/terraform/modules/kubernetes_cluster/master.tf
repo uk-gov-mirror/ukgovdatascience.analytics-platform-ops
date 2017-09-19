@@ -35,7 +35,8 @@ resource "aws_elb" "master" {
   subnets         = ["${var.vpc_public_subnet_ids}"]
   security_groups = [
     "${aws_security_group.master_elb.id}",
-    "${var.sg_allow_http_s}"
+    "${var.sg_allow_http_s}",
+    "${var.sg_masters_extra}"
   ]
   listener {
     instance_port     = 443

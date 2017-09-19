@@ -45,7 +45,8 @@ resource "aws_launch_configuration" "node" {
   iam_instance_profile        = "${var.node_iam_instance_profile}"
   security_groups             = [
     "${aws_security_group.node.id}",
-    "${var.sg_allow_ssh}"
+    "${var.sg_allow_ssh}",
+    "${var.sg_nodes_extra}"
   ]
 
   user_data                   = "${file("${path.module}/data/user_data.sh")}${data.template_file.node_user_data.rendered}"

@@ -34,6 +34,10 @@ variable "instance_key_name" {}
 variable "sg_allow_ssh" {}
 # Security group ID to allow HTTP/S from. Master ELB is added to this security group
 variable "sg_allow_http_s" {}
+# Security group ID for additional node SG rules
+variable "sg_nodes_extra" {}
+# Security group ID for additional master SG rules
+variable "sg_masters_extra" {}
 # A list of public subnet IDs
 variable "vpc_public_subnet_ids" {
   type = "list"
