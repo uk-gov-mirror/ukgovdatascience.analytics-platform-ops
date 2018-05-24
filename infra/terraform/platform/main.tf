@@ -37,7 +37,8 @@ module "data_buckets" {
 module "user_nfs_softnas" {
   source = "../modules/user_nfs_softnas"
 
-  num_instances             = 1
+  num_instances             = "${var.softnas_num_instances}"
+  default_volume_size       = "${var.softnas_default_volume_size}"
   env                       = "${terraform.workspace}"
   vpc_id                    = "${module.aws_vpc.vpc_id}"
   node_security_group_id    = "${module.aws_vpc.extra_node_sg_id}"
