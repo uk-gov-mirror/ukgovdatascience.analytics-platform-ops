@@ -8,7 +8,7 @@ terraform {
 
 provider "aws" {
   region  = "${var.region}"
-  version = ">= v1.25.0"
+  version = "~> 1.25"
 }
 
 module "aws_vpc" {
