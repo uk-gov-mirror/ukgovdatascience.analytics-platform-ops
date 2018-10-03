@@ -46,14 +46,6 @@ output "softnas_instance_type" {
   value = "${var.softnas_instance_type}"
 }
 
-output "control_panel_api_db_username" {
-  value = "${var.control_panel_api_db_username}"
-}
-
-output "control_panel_api_db_password" {
-  value = "${var.control_panel_api_db_password}"
-}
-
 output "airflow_db_username" {
   value = "${var.airflow_db_username}"
 }
