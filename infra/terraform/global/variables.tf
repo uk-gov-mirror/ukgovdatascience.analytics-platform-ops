@@ -3,7 +3,6 @@ variable "region" {
 }
 
 variable "kops_bucket_name" {}
-variable "terraform_bucket_name" {}
 variable "platform_root_domain" {}
 variable "es_domain" {}
 variable "es_port" {}
@@ -24,4 +23,8 @@ variable "global_cloudtrail_bucket_name" {
 
 variable "s3_logs_bucket_name" {
   default = "moj-analytics-s3-logs"
+}
+
+variable "helm_repo_s3_bucket_name" {
+  default = "moj-analytics-helm-repo"
 }
