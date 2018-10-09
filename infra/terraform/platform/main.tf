@@ -59,19 +59,19 @@ module "user_nfs_softnas" {
 #   logs_bucket_arn     = "${data.terraform_remote_state.base.s3_logs_bucket_name}"
 # }
 
-module "encrypt_scratch_lambda_function" {
-  source     = "../modules/lambda_functions"
-  env        = "${terraform.workspace}"
-  bucket_id  = "${module.data_buckets.scratch_bucket_id}"
-  bucket_arn = "${module.data_buckets.scratch_bucket_arn}"
-}
+# module "encrypt_scratch_lambda_function" {
+#   source     = "../modules/lambda_functions"
+#   env        = "${terraform.workspace}"
+#   bucket_id  = "${module.data_buckets.scratch_bucket_id}"
+#   bucket_arn = "${module.data_buckets.scratch_bucket_arn}"
+# }
 
-module "encrypt_crest_lambda_function" {
-  source     = "../modules/lambda_functions"
-  env        = "${terraform.workspace}"
-  bucket_id  = "${module.data_buckets.crest_bucket_id}"
-  bucket_arn = "${module.data_buckets.crest_bucket_arn}"
-}
+# module "encrypt_crest_lambda_function" {
+#   source     = "../modules/lambda_functions"
+#   env        = "${terraform.workspace}"
+#   bucket_id  = "${module.data_buckets.crest_bucket_id}"
+#   bucket_arn = "${module.data_buckets.crest_bucket_arn}"
+# }
 
 module "container_registry" {
   source = "../modules/container_registry"
