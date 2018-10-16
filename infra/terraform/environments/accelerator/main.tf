@@ -133,12 +133,13 @@ module "airflow_db" {
   subnet_ids             = "${module.aws_vpc.storage_subnet_ids}"
 }
 
-
 # Alternative to using SoftNAS as the NFS
 module "home_efs_volume" {
   source = "../../modules/efs_volume"
+
   # TODO: for better performance, edit the module to switch it to
   # "new provisioned throughput mode" (and play with the number).
+
 
   # once we've done this we need to hook it up in the user-init helm chart.
 
@@ -150,8 +151,9 @@ module "home_efs_volume" {
 }
 
 resource "aws_iam_policy" "read-user-roles-inline-policies" {
-  name   = "${var.env}-read-user-roles-inline-policies"
-  path   = "/"
+  name = "${var.env}-read-user-roles-inline-policies"
+  path = "/"
+
   policy = <<EOF
 {
     "Version": "2012-10-17",

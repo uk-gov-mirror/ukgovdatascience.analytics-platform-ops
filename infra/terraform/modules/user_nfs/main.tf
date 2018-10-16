@@ -16,6 +16,15 @@ variable "performance_mode" {
   default = "generalPurpose"
 }
 
+variable "throughput_mode" {
+  default = "bursting"
+}
+
+# applies when throughput_mode = "provisioned"
+variable "provisioned_throughput_in_mibps" {
+  default = "0"
+}
+
 output "efs_dns_name" {
   value = "${aws_efs_mount_target.storage.0.dns_name}"
 }
