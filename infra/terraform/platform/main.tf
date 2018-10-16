@@ -35,6 +35,17 @@ module "data_buckets" {
   env = "${terraform.workspace}"
 }
 
+module "user_nfs" {
+    source = "../../modules/user_nfs"
+
+    env = "${terraform.workspace}"
+    cluster_name = "${terraform.workspace}.${data.terraform_remote_state.base.platform_domain}"
+    vpc_id = "${module.aws_vpc.vpc_id}"
+    node_security_group_id = "${module.aws_vpc.extra_node_sg_id}"
+    subnet_ids = "${module.aws_vpc.storage_subnet_ids}"
+    availability_zones = "${var.availability_zones}"
+}
+
 module "user_nfs_softnas" {
   source = "../modules/user_nfs_softnas"
 
