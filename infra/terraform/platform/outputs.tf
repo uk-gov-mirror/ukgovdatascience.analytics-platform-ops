@@ -85,3 +85,7 @@ output "oidc_client_ids" {
 output "oidc_provider_thumbprints" {
   value = "${var.oidc_provider_thumbprints}"
 }
+
+output "user_nfs_dns_name" {
+  value = "${module.user_nfs.efs_dns_name}"
+}

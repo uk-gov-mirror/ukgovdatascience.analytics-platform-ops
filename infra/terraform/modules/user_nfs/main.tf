@@ -32,4 +32,3 @@ output "efs_dns_name" {
 output "num_subnets" {
   value = "${length(var.subnet_ids)}"
 }
-

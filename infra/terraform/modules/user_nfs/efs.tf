@@ -1,6 +1,6 @@
 resource "aws_efs_file_system" "users" {
-  creation_token   = "${var.env}-users"
-  performance_mode = "${var.performance_mode}"
+  creation_token                  = "${var.env}-users"
+  performance_mode                = "${var.performance_mode}"
   throughput_mode                 = "${var.throughput_mode}"
   provisioned_throughput_in_mibps = "${var.provisioned_throughput_in_mibps}"
 
@@ -28,4 +28,3 @@ resource "aws_efs_mount_target" "storage" {
   security_groups = ["${aws_security_group.efs.id}"]
   count           = "${length(var.availability_zones)}"
 }
-
