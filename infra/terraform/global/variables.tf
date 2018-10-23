@@ -14,7 +14,7 @@ variable "es_scheme" {
 }
 
 variable "uploads_bucket_name" {
-  default = "accelerator-land"
+  default = "mojap-land"
 }
 
 variable "global_cloudtrail_bucket_name" {
