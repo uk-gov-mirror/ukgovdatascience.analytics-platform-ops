@@ -70,13 +70,11 @@ Setup a deployment of ElasticSearch using the elastic.co SaaS service. (They off
 
 'Create deployment' with settings:
 
-    * Provider: AWS
-    * Region: EU (Ireland)
+* Provider: AWS
+* Region: EU (Ireland)
 
 On completion, fill in the `es_*` settings in the global `terraform.tfvars` - see below.
 
-
-**You must have valid AWS credentials in [`~/.aws/credentials`](http://docs.aws.amazon.com/amazonswf/latest/awsrbflowguide/set-up-creds.html)**
 
 ### Global terraform.tfvars
 
@@ -132,6 +130,10 @@ terraform init -backend-config "bucket=$TERRAFORM_STATE_BUCKET_NAME"
 # You can check the configured platform backend:
 grep \"key\" -C 1 .terraform/terraform.tfstate
 
+# HACK: You need to do this 'terraform apply' before the main 'terraform plan' or you get this error:
+# `module.ses_domain.aws_route53_record.domain_amazonses_dkim_verification_record: aws_route53_record.domain_amazonses_dkim_verification_record: value of 'count' cannot be computed`
+terraform apply -target aws_route53_record.aws_ses_domain_dkim
+
 # check the Terraform plans to create global infra (e.g. the Kops S3 bucket and a root DNS zone in Route53)
 terraform plan -var-file="assets/create_etcd_ebs_snapshot/create_etcd_ebs_snapshots.tfvars" -var-file="assets/prune_ebs_snapshots/vars_prune_ebs_snapshots.tfvars"
 
@@ -180,22 +182,13 @@ Once selected, on the SoftNAS product web page you need to:
 
    * Region: choose the same as chosen for the rest of your platform (e.g. EU Ireland)
 
+   Now record the AMI id (e.g. `ami-22cecec8`) - you'll use this in your .tfvars file in a moment.
+
 6. Click "Continue to Launch"
 
    * EC2 Instance Type - select a suitable one, considering cost. Record the instance type (e.g. `m5.large`) - you'll use this in your .tfvars file in a moment.
-   * Key pair - create one called "softnas-$ENVNAME" (replacing the $ENVNAME) and save the private key (.pem file) locally. Make this securely available to the platform's admins, so that they can ssh in for maintenance.
 
-7. Click "Launch"
-
-   Record the AMI id (e.g. `ami-22cecec8`) - you'll use this in your .tfvars file in a moment.
-
-8. Extract the public key, to use in your .tfvars file
-
-   ```
-   chmod 400 ~/Downloads/softnas-$ENVNAME.pem
-   ssh-keygen -y -f ~/Downloads/softnas-$ENVNAME.pem
-   ```
-   Record the entire output for your .tfvars file in a moment.
+You can now quit the launch process because terraform will do the launch. The important thing is that you've agreed to the licence and recorded the settings for your .tfvars file, needed in a moment.
 
 #### Auth0
 
@@ -275,13 +268,16 @@ vim vars/$ENVNAME.tfvars
 | `control_panel_api_db_password` | |
 | `airflow_db_username` | |
 | `airflow_db_password` | |
-| `ses_ap_email_identity_arn` | e.g. "arn:aws:ses:eu-west-1:1234567890:identity/user@example.com"
+| `ses_ap_email_identity_arn` | Create an SES email address that AP can use to send emails (SES provides the SMTP) and provide the ARN e.g. "arn:aws:ses:eu-west-1:1234567890:identity/user@example.com"
 | `softnas_ssh_public_key` | |
 | `softnas_ami_id` | e.g. `ami-22cecec8` |
 | `softnas_instance_type` | e.g. `m4.large` |
 | `oidc_provider_url` | In Auth0 look in the Application called 'AWS' for its domain and manually make it into a URL e.g. `https://dev-analytics-moj.eu.auth0.com/` |
 | `oidc_client_ids` | In Auth0 look in the Application called 'AWS' for its Client ID. e.g. `[ "Npai3Y", ]` |
-| `oidc_provider_thumbprints` | Use Auth0's thumbprints, which are: `["6ef423e5272b2347200970d1cd9d1a72beabc592", "9e99a48a9960b14926bb7f3b02e22da2b0ab7280",]`|
+| `oidc_provider_thumbprints` | Use Auth0's thumbprints, which are: `["6ef423e5272b2347200970d1cd9d1a72beabc592", "9e99a48a9960b14926bb7f3b02e22da2b0ab7280",]` |
+| `trusted_entity` | e.g. `["arn:aws:iam::1234567890:role/nodes.alpha.mojanalytics.xyz"]` |
+| `hostedzoneid_arn` | Do: `aws route53 list-hosted-zones` and find your environment's hosted zone e.g. 'alpha.mojanalytics.xyz' and take the Id e.g. "/hostedzone/ZNTPTENPSK7S5" and put it into arn format e.g. `["arn:aws:route53:::hostedzone/ZNTPTENPSK7S5"]` |
+
 
 
 ### Working with an existing environment
@@ -356,34 +352,13 @@ cp -R infra/kops/clusters/alpha infra/kops/clusters/$ENVNAME
 3. Set the correct values for your new cluster config:
 ```
 cd infra/terraform/global
-export KOPS_STATE_STORE=s3://`terraform output kops_bucket_name` >/tmp/kops_bucket_name
+export KOPS_STATE_STORE=s3://`terraform output kops_bucket_name`
+export ENV_DOMAIN=`terraform output -module=cluster_dns dns_zone_domain`
+# Get the Client ID from Auth0 "kubectl-oidc" application e.g.
+export KUBECTL_OIDC_CLIENT_ID=P742wMtS4iiA6axtbPd2ygpOa64gZqGD
 
 cd ../../../infra/terraform/platform
-export ENV_DOMAIN=`terraform output -module=cluster_dns dns_zone_domain`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.configBase $KOPS_STATE_STORE/$ENV_DOMAIN
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.kubeAPIServer.oidcClientID `terraform output oidc_client_ids`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.kubeAPIServer.oidcGroupsClaim https://api.$ENV_DOMAIN/claims/groups
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.kubeAPIServer.oidcIssuerURL `terraform output oidc_provider_url`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml metadata.name $ENV_DOMAIN
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.masterInternalName api.internal.$ENV_DOMAIN
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.masterPublicName api.$ENV_DOMAIN
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.topology.bastion.bastionPublicName bastion.$ENV_DOMAIN
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.dnsZone `terraform output -module=cluster_dns dns_zone_id`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.networkID `terraform output -module=aws_vpc vpc_id`
-terraform output -module=aws_vpc -json private_subnets > /tmp/private_subnets
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.subnets[0].id `jq '.value|to_entries|sort_by(.value)[0].key' /tmp/private_subnets`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.subnets[1].id `jq '.value|to_entries|sort_by(.value)[1].key' /tmp/private_subnets`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.subnets[2].id `jq '.value|to_entries|sort_by(.value)[2].key' /tmp/private_subnets`
-terraform output -module=aws_vpc -json dmz_subnets > /tmp/dmz_subnets
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.subnets[3].id `jq '.value|to_entries|sort_by(.value)[0].key' /tmp/dmz_subnets`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.subnets[4].id `jq '.value|to_entries|sort_by(.value)[1].key' /tmp/dmz_subnets`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/cluster.yml spec.subnets[5].id `jq '.value|to_entries|sort_by(.value)[2].key' /tmp/dmz_subnets`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/masters.yml -d'*' 'metadata.labels[kops.k8s.io/cluster]' $ENV_DOMAIN
-yq w -i ../../../infra/kops/clusters/$ENVNAME/masters.yml -d'*' spec.additionalSecurityGroups[0] `terraform output -module=aws_vpc extra_master_sg_id`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/nodes.yml 'metadata.labels[kops.k8s.io/cluster]' $ENV_DOMAIN
-yq w -i ../../../infra/kops/clusters/$ENVNAME/nodes.yml -d'*' spec.additionalSecurityGroups[0] `terraform output -module=aws_vpc extra_node_sg_id`
-yq w -i ../../../infra/kops/clusters/$ENVNAME/bastions.yml 'metadata.labels[kops.k8s.io/cluster]' $ENV_DOMAIN
-yq w -i ../../../infra/kops/clusters/$ENVNAME/bastions.yml -d'*' spec.additionalSecurityGroups[0] `terraform output -module=aws_vpc extra_bastion_sg_id`
+../../kops/configure.sh $KOPS_STATE_STORE $ENVNAME $ENV_DOMAIN $KUBECTL_OIDC_CLIENT_ID
 ```
 
 4. Ensure you've set the Kops state store environment variable (see previous step):
@@ -392,9 +367,9 @@ yq w -i ../../../infra/kops/clusters/$ENVNAME/bastions.yml -d'*' spec.additional
   s3://kops.analytics.justice.gov.uk
   ```
 
-4. Plan Kops cluster resource creation:
+5. Plan Kops cluster resource creation:
 
-	```
+  ```
   cd ../../../infra/kops/clusters/$ENVNAME
   kops create -f cluster.yml
   kops create -f bastions.yml
@@ -449,11 +424,20 @@ metadata:
     iam.amazonaws.com/allowed-roles: '["(dev|alpha)_.*"]'
 ```
 
+### Install basic charts
+
+For any AP you need to install a couple of basic charts now:
+
+* init-platform
+* nginx-ingress
+
+For the instructions, see: https://github.com/ministryofjustice/analytics-platform-helm-charts/blob/master/charts/README.md
+
 ### Ingress DNS setup
 
 Some extra DNS entries need creating for ingress:
 ```
-./ingress_load_balancer_create_dns.sh $CLUSTER_NAME
+./ingress_load_balancer_create_dns.sh $ENV_DOMAIN
 ```
 
 ### Modifying AWS and cluster post-creation
@@ -463,15 +447,79 @@ Once all of the above has been carried out, both Terraform and Kops state bucket
   * `$ terraform plan`
   * `$ terraform apply`
 * To make changes to the cluster, edit Kops cluster specs in place, as unfortunately YAML files can not be passed to the `edit` command. You should however strive to keep your local YAML files in sync with Kops remote files, so that environments can be easily recreated in the future:
-  * `$ kops edit cluster $CLUSTER_NAME`
+  * `$ kops edit cluster $ENV_DOMAIN`
   * Make changes to the cluster spec and save
-  * Apply changes: `$ kops update cluster $CLUSTER_NAME --yes`
+  * Apply changes: `$ kops update cluster $ENV_DOMAIN --yes`
 
 [terraform]: https://www.terraform.io
 [kops]: https://github.com/kubernetes/kops
 [helm]: https://github.com/kubernetes/helm/
 [kubernetes]: https://kubernetes.io
 [gitcrypt]: https://www.agwa.name/projects/git-crypt/
+
+### Auth0 Applications
+
+In Auth0 you need to create some Applications.
+
+#### kubectl-oidc application
+
+1. Login to https://manage.auth0.com/ and select the tenant for your environment
+2. In the side-bar click "Applications"
+3. Click "Create Application"
+      * Name: kubectl-oidc
+      * Application Type: Regular Web Applications
+4. Click "Save"
+5. Click "Settings" tab
+      * Allowed Callback URLs: `http://localhost:3000/callback, https://cpanel-master.services.$env.$domain/callback`
+      (replace the $variables)
+      * Allowed Web Origins: `http://localhost:3000, https://cpanel-master.services.$env.$domain` (replace the $variables)
+      * Allowed Logout URLs: `http://localhost:3000, https://cpanel-master.services.$env.$domain` (replace the $variables)
+6. Click "Save changes"
+7. Click "Connections" tab
+8. Switch OFF "Database" and "Google"
+9. In the side-bar click "Connections" then "Social"
+10. If GitHub is not already ON:
+     1. Click GitHub to set it up
+     2. Follow: [Connect your app to GitHub](https://auth0.com/docs/connections/social/github)
+        Make sure you create the connection in your organization, not your own account. Complete the Client ID and Client Secret on GitHub.
+     3. Check these boxes:
+        * Email address
+        * read:user
+        * read:org
+     4. Click "Save"
+     5. Click "Applications" tab and switch on all applications that need login, including: auth0-authz, AWS, RStudio, Grafana, Control Panel, kubectl-oidc, Jupyter Lab, Concourse, Airflow, auth0-logs-to-logstash.
+     6. Click "Save" and "X" to close the dialog.
+
+The Client ID and Client Secret values will be used in various helm chart configurations.
+
+### Auth0 Rules
+
+Auth0 needs 'rules' installed, to ensure only certain people can log-in, for example.
+
+Find the rules in this repo: https://github.com/ministryofjustice/analytics-platform-auth0
+in the dev or alpha branches. Create a new branch based on these and adapt the following settings in them:
+
+| Setting | Description |
+| ------- | ----------- |
+| `targeted_clients` | The 'Client ID' of the Auth0 application "kubectl-oidc" |
+| `namespace` | Set to: `https://api.$ENV.$DOMAIN/claims/` but replace the variables |
+| `AUTHENTICATOR_LABEL` | The name of the platform, as shown when doing Auth0 MFA |
+| `whitelist` | The GitHub organizations whose members are authorized to access the platform |
+
+You can use the Auth0 web ui to add the rules, or set-up auto deployment like this:
+1. In Auth0 click "Extensions" in the side menu.
+2. Search for and click "GitHub Deployments"
+3. Fill in options, e.g.:
+   * GITHUB_REPOSITORY: ministryofjustice/analytics-platform-auth0
+   * GITHUB_BRANCH: alpha
+   * GITHUB_TOKEN: (create one this from: https://github.com/settings/tokens and select the "repo" scope)
+4. Click "Save"
+5. Click "Installed Extensions" tab, then click "GitHub Integration" and agree to access.
+6. Find the text "A webhook has to be created <$repo>" and open the link a new tab. Note: actually you need to create the webhook yourself!
+7. Click "Add webhook" and copy the three option values from the previous browser tab. Then click "Add webhook".
+8. Click "Deployments" tab and click "Deploy" which should show add a line with Status of "Success".
+9. https://manage.auth0.com/#/rules should now be populated
+
 
 ### NFS server administration
 
@@ -514,7 +562,7 @@ The SoftNAS secondary will monitor availability of the primary, and take over pr
 
 ## What's next
 
-Now you have the infrastructure set-up, next install the charts: https://github.com/ministryofjustice/analytics-platform-helm-charts/blob/master/README.md
+Now you have the infrastructure set-up, next install other charts: https://github.com/ministryofjustice/analytics-platform-helm-charts/blob/master/README.md
 
 
 Ensure you refer to the READMEs for each chart, for additional setup e.g. [Auth0 setup for cpanel](https://github.com/ministryofjustice/analytics-platform-helm-charts/blob/master/charts/cpanel/README.md)
