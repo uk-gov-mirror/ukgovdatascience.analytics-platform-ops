@@ -5,14 +5,17 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./index.js"
+    "start": "node ./index.js",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "author": "Ministry of Justice",
   "license": "MIT",
   "dependencies": {
     "chalk": "^2.4.1",
     "commander": "^2.18.0",
-    "kubernetes-client": "^6.1.0"
+    "kubernetes-client": "^6.1.0",
+    "snyk": "^1.189.0"
   },
   "devDependencies": {
     "ajv": "^6.5.4",
@@ -23,5 +26,6 @@
     "eslint-plugin-node": "^7.0.1",
     "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-standard": "^4.0.0"
-  }
+  },
+  "snyk": true
 }
